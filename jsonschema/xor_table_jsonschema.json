@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "xor_table",
+  "description": "extract xor data from Mirai table.c",
+  "type": "object",
+  "properties": {
+    "script_name": {
+      "description": "script name",
+      "type": "string",
+      "enum": ["xor_table.py"]
+    },
+    "ghidra_current_program": {
+      "description": "Ghidra currentProgram info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "file name",
+          "type": "string"
+        },
+        "path": {
+          "description": "file path",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "file SHA256 hash",
+          "type": "string"
+        },
+        "language_id": {
+          "description": "program language name",
+          "type": "string"
+        },
+        "image_base": {
+          "description": "program image base address",
+          "type": "string"
+        },
+        "min_addr": {
+          "description": "program minimum address",
+          "type": "string"
+        },
+        "max_addr": {
+          "description": "program maximum address",
+          "type": "string"
+        }
+      }
+    },
+    "table_lock_val_func": {
+      "description": "Mirai table.c/table_lock_val() info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "function name",
+          "type": "string"
+        },
+        "entrypoint": {
+          "description": "function entrypoint",
+          "type": "string"
+        },
+        "table_key": {
+          "description": "table.c xor key (1 byte)",
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{2}$"
+        },
+        "table_original_key": {
+          "description": "table.c original xor key (4 bytes)",
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{8}$"
+        }
+      }
+    },
+    "table_init_func": {
+      "description": "Mirai table.c/table_init() info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "function name",
+          "type": "string"
+        },
+        "entrypoint": {
+          "description": "function entrypoint",
+          "type": "string"
+        },
+        "tables_sha256": {
+          "description": "tables SHA256 hash",
+          "type": "string"
+        },
+        "tables_count": {
+          "description": "number of tables",
+          "type": "number"
+        },
+        "tables_int_count": {
+          "description": "number of type int tables",
+          "type": "number"
+        },
+        "tables_str_count": {
+          "description": "number of type str tables",
+          "type": "number"
+        },
+        "tables": {
+          "description": "xor data using for Mirai configuration",
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "data id defined at table.h",
+                  "type": "number"
+                },
+                "type": {
+                  "description": "data type",
+                  "type": "string"
+                },
+                "int_data": {
+                  "description": "type int data (maybe port number 0-65535)",
+                  "type": "number",
+                  "maximum": 65535
+                },
+                "str_data": {
+                  "description": "type str data",
+                  "type": "string",
+                  "maxLength": 1024
+                },
+                "table_addr": {
+                  "description": "table address",
+                  "type": "string"
+                },
+                "refs": {
+                  "description": "function/address of data reference source",
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "func": {
+                          "description": "function name of data reference source",
+                          "type": "string"
+                        },
+                        "addr": {
+                          "description": "address of data reference source",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

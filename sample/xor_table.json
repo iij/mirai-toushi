@@ -1,0 +1,675 @@
+{
+  "script_name": "xor_table.py", 
+  "ghidra_current_program": {
+    "name": "sample.i586", 
+    "path": "/home/remnux/sample.i586", 
+    "sha256": "daf75e88ac6fc869350b426a10f0e8d9588b016e420485e390c6d0388e0aa90e", 
+    "language_id": "x86:LE:32:default", 
+    "image_base": "08048000", 
+    "min_addr": "08048000", 
+    "max_addr": "_elfSectionHeaders::0000027f"
+  }, 
+  "table_lock_val_func": {
+    "name": "table_lock_val", 
+    "entrypoint": "08050f80", 
+    "table_key": "0x22", 
+    "table_original_key": "0xdeadbeef"
+  }, 
+  "table_init_func": {
+    "name": "table_init", 
+    "entrypoint": "08051080", 
+    "tables_sha256": "5c4a784a20ca5269802f1b39be5a9b5ca9e2fe9deca5285467788e4ba95182dd", 
+    "tables_count": 50, 
+    "tables_int_count": 2, 
+    "tables_str_count": 48, 
+    "tables": [
+      {
+        "id": 3, 
+        "type": "str", 
+        "str_data": "example.com", 
+        "table_addr": "080565d8", 
+        "refs": [
+          {
+            "func": "resolve_cnc_addr", 
+            "addr": "0804e552"
+          }
+        ]
+      }, 
+      {
+        "id": 4, 
+        "type": "int", 
+        "int_data": 23, 
+        "table_addr": "080565e0", 
+        "refs": [
+          {
+            "func": "resolve_cnc_addr", 
+            "addr": "0804e5a9"
+          }
+        ]
+      }, 
+      {
+        "id": 18, 
+        "type": "str", 
+        "str_data": "example.net", 
+        "table_addr": "08056650", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050dcb"
+          }
+        ]
+      }, 
+      {
+        "id": 19, 
+        "type": "int", 
+        "int_data": 48101, 
+        "table_addr": "08056658", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050e11"
+          }
+        ]
+      }, 
+      {
+        "id": 2, 
+        "type": "str", 
+        "str_data": "listening tun0", 
+        "table_addr": "080565d0", 
+        "refs": [
+          {
+            "func": "main", 
+            "addr": "0804ea13"
+          }
+        ]
+      }, 
+      {
+        "id": 5, 
+        "type": "str", 
+        "str_data": "https://example.com/", 
+        "table_addr": "080565e8", 
+        "refs": []
+      }, 
+      {
+        "id": 6, 
+        "type": "str", 
+        "str_data": "/proc/", 
+        "table_addr": "080565f0", 
+        "refs": [
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804d833"
+          }, 
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804d890"
+          }, 
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804d91e"
+          }, 
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804d9d6"
+          }, 
+          {
+            "func": "killer_init", 
+            "addr": "0804dd27"
+          }, 
+          {
+            "func": "killer_init", 
+            "addr": "0804de20"
+          }, 
+          {
+            "func": "killer_init", 
+            "addr": "0804dedf"
+          }, 
+          {
+            "func": "killer_init", 
+            "addr": "0804df25"
+          }
+        ]
+      }, 
+      {
+        "id": 7, 
+        "type": "str", 
+        "str_data": "/exe", 
+        "table_addr": "080565f8", 
+        "refs": [
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804d8cc"
+          }, 
+          {
+            "func": "killer_init", 
+            "addr": "0804dd6c"
+          }, 
+          {
+            "func": "killer_init", 
+            "addr": "0804df0e"
+          }
+        ]
+      }, 
+      {
+        "id": 8, 
+        "type": "str", 
+        "str_data": " (deleted)", 
+        "table_addr": "08056600", 
+        "refs": []
+      }, 
+      {
+        "id": 9, 
+        "type": "str", 
+        "str_data": "/fd", 
+        "table_addr": "08056608", 
+        "refs": [
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804d95a"
+          }, 
+          {
+            "func": "killer_kill_by_port", 
+            "addr": "0804da12"
+          }
+        ]
+      }, 
+      {
+        "id": 10, 
+        "type": "str", 
+        "str_data": ".anime", 
+        "table_addr": "08056610", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804dfc0"
+          }
+        ]
+      }, 
+      {
+        "id": 11, 
+        "type": "str", 
+        "str_data": "/status", 
+        "table_addr": "08056618", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804df54"
+          }
+        ]
+      }, 
+      {
+        "id": 12, 
+        "type": "str", 
+        "str_data": "REPORT %s:%s", 
+        "table_addr": "08056620", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804e12c"
+          }
+        ]
+      }, 
+      {
+        "id": 13, 
+        "type": "str", 
+        "str_data": "HTTPFLOOD", 
+        "table_addr": "08056628", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804e141"
+          }
+        ]
+      }, 
+      {
+        "id": 14, 
+        "type": "str", 
+        "str_data": "LOLNOGTFO", 
+        "table_addr": "08056630", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804e156"
+          }
+        ]
+      }, 
+      {
+        "id": 15, 
+        "type": "str", 
+        "str_data": "\\x58\\x4D\\x4E\\x4E\\x43\\x50\\x46\\x22", 
+        "table_addr": "08056638", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804e16b"
+          }
+        ]
+      }, 
+      {
+        "id": 16, 
+        "type": "str", 
+        "str_data": "zollard", 
+        "table_addr": "08056640", 
+        "refs": [
+          {
+            "func": "killer_init", 
+            "addr": "0804e180"
+          }
+        ]
+      }, 
+      {
+        "id": 17, 
+        "type": "str", 
+        "str_data": "GETLOCALIP", 
+        "table_addr": "08056648", 
+        "refs": []
+      }, 
+      {
+        "id": 20, 
+        "type": "str", 
+        "str_data": "shell", 
+        "table_addr": "08056660", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "080506e4"
+          }
+        ]
+      }, 
+      {
+        "id": 21, 
+        "type": "str", 
+        "str_data": "enable", 
+        "table_addr": "08056668", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050b02"
+          }
+        ]
+      }, 
+      {
+        "id": 22, 
+        "type": "str", 
+        "str_data": "system", 
+        "table_addr": "08056670", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050997"
+          }
+        ]
+      }, 
+      {
+        "id": 23, 
+        "type": "str", 
+        "str_data": "sh", 
+        "table_addr": "08056678", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050a89"
+          }
+        ]
+      }, 
+      {
+        "id": 24, 
+        "type": "str", 
+        "str_data": "/bin/busybox MIRAI", 
+        "table_addr": "08056680", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050a10"
+          }
+        ]
+      }, 
+      {
+        "id": 25, 
+        "type": "str", 
+        "str_data": "MIRAI: applet not found", 
+        "table_addr": "08056688", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "080505cf"
+          }
+        ]
+      }, 
+      {
+        "id": 26, 
+        "type": "str", 
+        "str_data": "ncorrect", 
+        "table_addr": "08056690", 
+        "refs": [
+          {
+            "func": "scanner_init", 
+            "addr": "08050586"
+          }
+        ]
+      }, 
+      {
+        "id": 27, 
+        "type": "str", 
+        "str_data": "/bin/busybox ps", 
+        "table_addr": "08056698", 
+        "refs": []
+      }, 
+      {
+        "id": 28, 
+        "type": "str", 
+        "str_data": "/bin/busybox kill -9 ", 
+        "table_addr": "080566a0", 
+        "refs": []
+      }, 
+      {
+        "id": 29, 
+        "type": "str", 
+        "str_data": "TSource Engine Query", 
+        "table_addr": "080566a8", 
+        "refs": [
+          {
+            "func": "attack_udp_vse", 
+            "addr": "0804cc39"
+          }
+        ]
+      }, 
+      {
+        "id": 30, 
+        "type": "str", 
+        "str_data": "/etc/resolv.conf", 
+        "table_addr": "080566b0", 
+        "refs": [
+          {
+            "func": "attack_udp_dns", 
+            "addr": "0804cfd6"
+          }
+        ]
+      }, 
+      {
+        "id": 31, 
+        "type": "str", 
+        "str_data": "nameserver ", 
+        "table_addr": "080566b8", 
+        "refs": [
+          {
+            "func": "attack_udp_dns", 
+            "addr": "0804d02b"
+          }
+        ]
+      }, 
+      {
+        "id": 32, 
+        "type": "str", 
+        "str_data": "Connection: keep-alive", 
+        "table_addr": "080566c0", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08048886"
+          }
+        ]
+      }, 
+      {
+        "id": 33, 
+        "type": "str", 
+        "str_data": "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", 
+        "table_addr": "080566c8", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "080488f1"
+          }
+        ]
+      }, 
+      {
+        "id": 34, 
+        "type": "str", 
+        "str_data": "Accept-Language: en-US,en;q=0.8", 
+        "table_addr": "080566d0", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "0804895c"
+          }
+        ]
+      }, 
+      {
+        "id": 35, 
+        "type": "str", 
+        "str_data": "Content-Type: application/x-www-form-urlencoded", 
+        "table_addr": "080566d8", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "080489d4"
+          }
+        ]
+      }, 
+      {
+        "id": 36, 
+        "type": "str", 
+        "str_data": "setCookie('", 
+        "table_addr": "080566e0", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "0804963c"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08049665"
+          }
+        ]
+      }, 
+      {
+        "id": 37, 
+        "type": "str", 
+        "str_data": "refresh:", 
+        "table_addr": "080566e8", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "0804985a"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08049885"
+          }
+        ]
+      }, 
+      {
+        "id": 38, 
+        "type": "str", 
+        "str_data": "location:", 
+        "table_addr": "080566f0", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "080493d8"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08049403"
+          }
+        ]
+      }, 
+      {
+        "id": 39, 
+        "type": "str", 
+        "str_data": "set-cookie:", 
+        "table_addr": "080566f8", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "080491e6"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08049221"
+          }
+        ]
+      }, 
+      {
+        "id": 40, 
+        "type": "str", 
+        "str_data": "content-length:", 
+        "table_addr": "08056700", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08048a33"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "0804912a"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08049155"
+          }
+        ]
+      }, 
+      {
+        "id": 41, 
+        "type": "str", 
+        "str_data": "transfer-encoding:", 
+        "table_addr": "08056708", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08049055"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08049080"
+          }
+        ]
+      }, 
+      {
+        "id": 42, 
+        "type": "str", 
+        "str_data": "chunked", 
+        "table_addr": "08056710", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "080490f8"
+          }
+        ]
+      }, 
+      {
+        "id": 43, 
+        "type": "str", 
+        "str_data": "keep-alive", 
+        "table_addr": "08056718", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08049018"
+          }
+        ]
+      }, 
+      {
+        "id": 44, 
+        "type": "str", 
+        "str_data": "connection:", 
+        "table_addr": "08056720", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08048f75"
+          }, 
+          {
+            "func": "attack_app_http", 
+            "addr": "08048fa0"
+          }
+        ]
+      }, 
+      {
+        "id": 45, 
+        "type": "str", 
+        "str_data": "server: dosarrest", 
+        "table_addr": "08056728", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08048f39"
+          }
+        ]
+      }, 
+      {
+        "id": 46, 
+        "type": "str", 
+        "str_data": "server: cloudflare-nginx", 
+        "table_addr": "08056730", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08048f08"
+          }
+        ]
+      }, 
+      {
+        "id": 47, 
+        "type": "str", 
+        "str_data": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", 
+        "table_addr": "08056738", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08049f4a"
+          }
+        ]
+      }, 
+      {
+        "id": 48, 
+        "type": "str", 
+        "str_data": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36", 
+        "table_addr": "08056740", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "08049fd3"
+          }
+        ]
+      }, 
+      {
+        "id": 49, 
+        "type": "str", 
+        "str_data": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", 
+        "table_addr": "08056748", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "0804a008"
+          }
+        ]
+      }, 
+      {
+        "id": 50, 
+        "type": "str", 
+        "str_data": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36", 
+        "table_addr": "08056750", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "0804a072"
+          }
+        ]
+      }, 
+      {
+        "id": 51, 
+        "type": "str", 
+        "str_data": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/601.7.7 (KHTML, like Gecko) Version/9.1.2 Safari/601.7.7", 
+        "table_addr": "08056758", 
+        "refs": [
+          {
+            "func": "attack_app_http", 
+            "addr": "0804a03d"
+          }
+        ]
+      }
+    ]
+  }
+}

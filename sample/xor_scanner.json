@@ -1,0 +1,140 @@
+{
+  "script_name": "xor_scanner.py", 
+  "ghidra_current_program": {
+    "name": "sample.i586", 
+    "path": "/home/remnux/sample.i586", 
+    "sha256": "daf75e88ac6fc869350b426a10f0e8d9588b016e420485e390c6d0388e0aa90e", 
+    "language_id": "x86:LE:32:default", 
+    "image_base": "08048000", 
+    "min_addr": "08048000", 
+    "max_addr": "_elfSectionHeaders::0000027f"
+  }, 
+  "add_auth_entry_func": {
+    "name": "add_auth_entry", 
+    "entrypoint": "0804f8d0", 
+    "scanner_key": "0x22"
+  }, 
+  "scanner_init_func": {
+    "name": "scanner_init", 
+    "entrypoint": "0804fa20", 
+    "auth_tables_sha256": "0e60e37e94702511c143b8d69f551b055b136458ca6c2d5728e5029417f1fb76", 
+    "auth_tables_count": 23, 
+    "auth_tables": [
+      {
+        "user": "root", 
+        "pass": "admin", 
+        "weight": 8
+      }, 
+      {
+        "user": "admin", 
+        "pass": "admin", 
+        "weight": 7
+      }, 
+      {
+        "user": "root", 
+        "pass": "default", 
+        "weight": 5
+      }, 
+      {
+        "user": "root", 
+        "pass": "123456", 
+        "weight": 5
+      }, 
+      {
+        "user": "root", 
+        "pass": "54321", 
+        "weight": 5
+      }, 
+      {
+        "user": "root", 
+        "pass": "", 
+        "weight": 4
+      }, 
+      {
+        "user": "admin", 
+        "pass": "password", 
+        "weight": 4
+      }, 
+      {
+        "user": "root", 
+        "pass": "root", 
+        "weight": 4
+      }, 
+      {
+        "user": "root", 
+        "pass": "12345", 
+        "weight": 4
+      }, 
+      {
+        "user": "user", 
+        "pass": "user", 
+        "weight": 3
+      }, 
+      {
+        "user": "admin", 
+        "pass": "", 
+        "weight": 3
+      }, 
+      {
+        "user": "root", 
+        "pass": "pass", 
+        "weight": 3
+      }, 
+      {
+        "user": "root", 
+        "pass": "1111", 
+        "weight": 3
+      }, 
+      {
+        "user": "admin", 
+        "pass": "1111", 
+        "weight": 2
+      }, 
+      {
+        "user": "root", 
+        "pass": "password", 
+        "weight": 2
+      }, 
+      {
+        "user": "root", 
+        "pass": "1234", 
+        "weight": 2
+      }, 
+      {
+        "user": "root", 
+        "pass": "user", 
+        "weight": 1
+      }, 
+      {
+        "user": "admin", 
+        "pass": "1234", 
+        "weight": 1
+      }, 
+      {
+        "user": "admin", 
+        "pass": "12345", 
+        "weight": 1
+      }, 
+      {
+        "user": "admin", 
+        "pass": "54321", 
+        "weight": 1
+      }, 
+      {
+        "user": "admin", 
+        "pass": "123456", 
+        "weight": 1
+      }, 
+      {
+        "user": "admin", 
+        "pass": "4321", 
+        "weight": 1
+      }, 
+      {
+        "user": "admin", 
+        "pass": "pass", 
+        "weight": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "xor_scanner",
+  "description": "extract xor data from Mirai scanner.c",
+  "type": "object",
+  "properties": {
+    "script_name": {
+      "description": "script name",
+      "type": "string",
+      "enum": ["xor_scanner.py"]
+    },
+    "ghidra_current_program": {
+      "description": "Ghidra currentProgram info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "file name",
+          "type": "string"
+        },
+        "path": {
+          "description": "file path",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "file SHA256 hash",
+          "type": "string"
+        },
+        "language_id": {
+          "description": "program language name",
+          "type": "string"
+        },
+        "image_base": {
+          "description": "program image base address",
+          "type": "string"
+        },
+        "min_addr": {
+          "description": "program minimum address",
+          "type": "string"
+        },
+        "max_addr": {
+          "description": "program maximum address",
+          "type": "string"
+        }
+      }
+    },
+    "add_auth_entry_func": {
+      "description": "Mirai scanner.c/add_auth_entry() info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "function name",
+          "type": "string"
+        },
+        "entrypoint": {
+          "description": "function entrypoint",
+          "type": "string"
+        },
+        "scanner_key": {
+          "description": "scanner.c xor key (1 byte)",
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{2}$"
+        }
+      }
+    },
+    "scanner_init_func": {
+      "description": "Mirai scanner.c/scanner_init() info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "function name",
+          "type": "string"
+        },
+        "entrypoint": {
+          "description": "function entrypoint",
+          "type": "string"
+        },
+        "auth_tables_sha256": {
+          "description": "auth_tables SHA256 hash",
+          "type": "string"
+        },
+        "auth_tables_count": {
+          "description": "number of auth_tables",
+          "type": "number"
+        },
+        "auth_tables": {
+          "description": "username/password list using for Telnet scanner",
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "description": "username",
+                  "type": "string"
+                },
+                "pass": {
+                  "description": "password",
+                  "type": "string"
+                },
+                "weight": {
+                  "description": "random selection weight",
+                  "type": "number"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
