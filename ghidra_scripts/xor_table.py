@@ -1,3 +1,7 @@
+#Extract xor data (e.g., C2, Scan Receiver, DoS parameter) from Mirai table.c
+#@author Shun Morishita
+#@category Analysis
+
 import collections
 import copy
 import hashlib
@@ -47,9 +51,9 @@ MNE_INT_XOR = "INT_XOR"
 
 ARCH_ARM_BE = "ARM:BE:32:v8"
 ARCH_ARM_LE = "ARM:LE:32:v8"
+ARCH_M68K = "68000:BE:32:Coldfire"
 ARCH_MIPS_BE = "MIPS:BE:32:default"
 ARCH_MIPS_LE = "MIPS:LE:32:default"
-ARCH_M68K = "68000:BE:32:Coldfire"
 ARCH_PPC = "PowerPC:BE:32:default"
 ARCH_SH4 = "SuperH4:LE:32:default"
 ARCH_SPC = "sparc:BE:32:default"
@@ -57,7 +61,7 @@ ARCH_X86 = "x86:LE:32:default"
 ARCH_X86_64 = "x86:LE:64:default"
 
 SCRIPT_NAME = "xor_table.py"
-LANGS = [ARCH_ARM_BE, ARCH_ARM_LE, ARCH_MIPS_BE, ARCH_MIPS_LE, ARCH_M68K, ARCH_PPC, ARCH_SH4, ARCH_SPC, ARCH_X86, ARCH_X86_64]
+LANGS = [ARCH_ARM_BE, ARCH_ARM_LE, ARCH_M68K, ARCH_MIPS_BE, ARCH_MIPS_LE, ARCH_PPC, ARCH_SH4, ARCH_SPC, ARCH_X86, ARCH_X86_64]
 
 def defUndefinedFuncs(listing, monitor):
     # ref. https://github.com/EliasKotlyar/Med9GhidraScripts/blob/main/general/DefineUndefinedFunctions.py
@@ -160,10 +164,28 @@ def getTableKey(listing, func_mgr):
     return table_lock_val_funcs, table_key, table_original_key_str, table_base_addr
 
 def getTableInitFunc(listing, ifc, monitor, func_mgr, table_key, xor_string_count_threshold=3):
-    table_init_func = util_memcpy_func = None
+    def _getCandUtilMemcpyFuncs(cand_caller_func):
+        res = ifc.decompileFunction(cand_caller_func, 60, monitor)
+        if not res:
+            return None
+        high_func = res.getHighFunction()
+        pcodes = high_func.getPcodeOps()
+        # get target_funcs: malloc() or util_memcpy()
+        cand_util_memcpy_funcs = []
+        for pcode in pcodes:
+            if pcode.getMnemonic() in (MNE_CALL, MNE_CALLIND):
+                instruct_addr = pcode.getSeqnum().getTarget()
+                ref = getReferencesFrom(instruct_addr)
+                if len(ref) < 1:
+                    continue
+                ref_func = getFunctionAt(ref[0].getToAddress())
+                if ref_func:
+                    cand_util_memcpy_funcs.append(ref_func)
+        return cand_util_memcpy_funcs
+    table_init_func = util_memcpy_func = add_entry_func = None
     funcs = func_mgr.getFunctions(True)
     for func in funcs:
-        cand_table_init_func = None
+        cand_table_init_func = cand_add_entry_func = None
         # check func has xor strings (default threshold is 3)
         xor_string_count = 0
         for instruct in listing.getInstructions(func.getBody(), True):
@@ -195,37 +217,34 @@ def getTableInitFunc(listing, ifc, monitor, func_mgr, table_key, xor_string_coun
                 cand_table_init_func = func
                 break
         if cand_table_init_func:
-            res = ifc.decompileFunction(cand_table_init_func, 60, monitor)
-            if not res:
-                continue
-            high_func = res.getHighFunction()
-            pcodes = high_func.getPcodeOps()
-            # get target_funcs: malloc() or util_memcpy()
-            cand_util_memcpy_funcs = []
-            for pcode in pcodes:
-                if pcode.getMnemonic() in (MNE_CALL, MNE_CALLIND):
-                    instruct_addr = pcode.getSeqnum().getTarget()
-                    ref = getReferencesFrom(instruct_addr)
-                    if len(ref) < 1:
-                        continue
-                    ref_func = getFunctionAt(ref[0].getToAddress())
-                    if ref_func:
-                        cand_util_memcpy_funcs.append(ref_func)
+            cand_util_memcpy_funcs = _getCandUtilMemcpyFuncs(cand_table_init_func)
             if len(set(cand_util_memcpy_funcs)) == 2:
-                # get mode function
-                cand_util_memcpy_func1 = collections.Counter(cand_util_memcpy_funcs).most_common(2)[0][0]
-                cand_func1_instructs = list(listing.getInstructions(cand_util_memcpy_func1.getBody(), True))
-                # get second mode function
-                cand_util_memcpy_func2 = collections.Counter(cand_util_memcpy_funcs).most_common(2)[1][0]
-                cand_func2_instructs = list(listing.getInstructions(cand_util_memcpy_func2.getBody(), True))
-                # minimum function is util_memcpy()
-                if len(cand_func1_instructs) > len(cand_func2_instructs):
-                    util_memcpy_func = cand_util_memcpy_func2
+                pass
+            elif len(set(cand_util_memcpy_funcs)) == 1:
+                # maybe this is add_entry_func (this malware is not using optimization option -O3)
+                cand_add_entry_func = cand_util_memcpy_funcs[0]
+                cand_util_memcpy_funcs = _getCandUtilMemcpyFuncs(cand_add_entry_func)
+                if len(set(cand_util_memcpy_funcs)) == 2:
+                    pass
                 else:
-                    util_memcpy_func = cand_util_memcpy_func1
-                table_init_func = cand_table_init_func
-                break
-    return table_init_func, util_memcpy_func
+                    continue
+            else:
+                continue
+            # get mode function
+            cand_util_memcpy_func1 = collections.Counter(cand_util_memcpy_funcs).most_common(2)[0][0]
+            cand_func1_instructs = list(listing.getInstructions(cand_util_memcpy_func1.getBody(), True))
+            # get second mode function
+            cand_util_memcpy_func2 = collections.Counter(cand_util_memcpy_funcs).most_common(2)[1][0]
+            cand_func2_instructs = list(listing.getInstructions(cand_util_memcpy_func2.getBody(), True))
+            # minimum function is util_memcpy()
+            if len(cand_func1_instructs) > len(cand_func2_instructs):
+                util_memcpy_func = cand_util_memcpy_func2
+            else:
+                util_memcpy_func = cand_util_memcpy_func1
+            table_init_func = cand_table_init_func
+            add_entry_func = cand_add_entry_func
+            break
+    return table_init_func, util_memcpy_func, add_entry_func
 
 def updateUtilMemcpyFunc(util_memcpy_func):
     # set util_memcpy arguments
@@ -236,7 +255,7 @@ def updateUtilMemcpyFunc(util_memcpy_func):
     util_memcpy_func.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(), util_memcpy_func.getReturn(), args, Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, True, SourceType.USER_DEFINED)
     return None
 
-def getTables(listing, ifc, monitor, table_init_func, util_memcpy_func, table_key, table_base_addr):
+def getTables(listing, ifc, monitor, table_init_func, util_memcpy_func, add_entry_func, table_key, table_base_addr):
     tables = []
     language_id = currentProgram.getLanguageID().toString()
     bits = int(language_id.split(":")[2])
@@ -244,62 +263,88 @@ def getTables(listing, ifc, monitor, table_init_func, util_memcpy_func, table_ke
     if not res:
         return tables
     ccode = res.getCCodeMarkup()
-    # get enc data from util_memcpy_func second argument
-    call_func_strs = re.findall(util_memcpy_func.getName() + r"\(.*?,.*?,[0-9a-fA-F|x]+\);", ccode.toString())
-    for call_func_str in call_func_strs:
-        args = re.match(util_memcpy_func.getName() + r"\((.*?),(.*?),([0-9a-fA-F|x]+)\);", call_func_str)
-        if len(args.groups()) == 3:
-            data = getDecodeData(args.group(2), table_key)
-            table = collections.OrderedDict()
-            table[KEY_ID] = None
-            table[KEY_TYPE] = str(type(data)).split("'")[1]
-            if isinstance(data, int):
-                table[KEY_INT_DATA] = data
-            elif isinstance(data, str):
-                table[KEY_STR_DATA] = data
-            tables.append(table)
-    # get table_addr from table_mnemonic_strs instruct (after each util_memcpy_func)
-    table_mnemonic_strs, table_reg_str = getTableMnemonicString()
-    instructs = list(listing.getInstructions(table_init_func.getBody(), True))
-    index = table_count = 0
-    while index < len(instructs):
-        instruct = instructs[index]
-        index += 1
-        refs = getReferencesFrom(instruct.getAddress())
-        if len(refs) == 0:
-            continue
-        ref_addr = refs[0].getToAddress()
-        if ref_addr == util_memcpy_func.getEntryPoint():
-            while index < len(instructs):
-                inner_instruct = instructs[index]
-                index += 1
-                if inner_instruct.getMnemonicString() in table_mnemonic_strs:
-                    # check second operand is table_reg_str
-                    if table_reg_str:
-                        try:
-                            if table_reg_str != inner_instruct.getOpObjects(1)[0].toString():
+    if not add_entry_func:
+        # get enc data from util_memcpy_func second argument (optimization option is -O3)
+        call_func_strs = re.findall(util_memcpy_func.getName() + r"\(.*?,.*?,[0-9a-fA-F|x]+\);", ccode.toString())
+        for call_func_str in call_func_strs:
+            args = re.match(util_memcpy_func.getName() + r"\((.*?),(.*?),([0-9a-fA-F|x]+)\);", call_func_str)
+            if len(args.groups()) == 3:
+                data = getDecodeData(args.group(2), table_key)
+                table = collections.OrderedDict()
+                table[KEY_ID] = None
+                table[KEY_TYPE] = str(type(data)).split("'")[1]
+                if isinstance(data, int):
+                    table[KEY_INT_DATA] = data
+                elif isinstance(data, str):
+                    table[KEY_STR_DATA] = data
+                tables.append(table)
+        # get table_addr from table_mnemonic_strs instruct (after each util_memcpy_func)
+        table_mnemonic_strs, table_reg_str = getTableMnemonicString()
+        instructs = list(listing.getInstructions(table_init_func.getBody(), True))
+        index = table_count = 0
+        while index < len(instructs):
+            instruct = instructs[index]
+            index += 1
+            refs = getReferencesFrom(instruct.getAddress())
+            if len(refs) == 0:
+                continue
+            ref_addr = refs[0].getToAddress()
+            if ref_addr == util_memcpy_func.getEntryPoint():
+                while index < len(instructs):
+                    inner_instruct = instructs[index]
+                    index += 1
+                    if inner_instruct.getMnemonicString() in table_mnemonic_strs:
+                        # check second operand is table_reg_str
+                        if table_reg_str:
+                            try:
+                                if table_reg_str != inner_instruct.getOpObjects(1)[0].toString():
+                                    continue
+                            except:
                                 continue
-                        except:
-                            continue
-                    inner_refs = getReferencesFrom(inner_instruct.getAddress())
-                    if len(inner_refs) > 0:
-                        table_addr = inner_refs[0].getToAddress()
-                        # get id = (table_addr - table_base_addr) / size(m68k:6, 32bit:8, 64bit:16)
-                        id = None
-                        if table_addr.isMemoryAddress():
-                            if language_id == ARCH_M68K:
-                                id = int(table_addr.subtract(table_base_addr) / 6)
-                            elif bits == 32:
-                                id = int(table_addr.subtract(table_base_addr) / 8)
-                            elif bits == 64:
-                                id = int(table_addr.subtract(table_base_addr) / 16)
-                            if id < 0:
-                                id = None
-                        tables[table_count][KEY_ID] = id
-                        tables[table_count][KEY_TABLE_ADDR] = getAddrString(table_addr)
-                        tables[table_count][KEY_REFS] = []
-                        table_count += 1
-                        break
+                        inner_refs = getReferencesFrom(inner_instruct.getAddress())
+                        if len(inner_refs) > 0:
+                            table_addr = inner_refs[0].getToAddress()
+                            # get id = (table_addr - table_base_addr) / size(m68k:6, 32bit:8, 64bit:16)
+                            id = None
+                            if table_addr.isMemoryAddress():
+                                if language_id == ARCH_M68K:
+                                    id = int(table_addr.subtract(table_base_addr) / 6)
+                                elif bits == 32:
+                                    id = int(table_addr.subtract(table_base_addr) / 8)
+                                elif bits == 64:
+                                    id = int(table_addr.subtract(table_base_addr) / 16)
+                                if id < 0:
+                                    id = None
+                            tables[table_count][KEY_ID] = id
+                            tables[table_count][KEY_TABLE_ADDR] = getAddrString(table_addr)
+                            tables[table_count][KEY_REFS] = []
+                            table_count += 1
+                            break
+    else:
+        # get enc data from add_entry_func second argument (optimization option is not -O3)
+        call_func_strs = re.findall(add_entry_func.getName() + r"\([0-9a-fA-F|x]+,.*?,[0-9a-fA-F|x]+\);", ccode.toString())
+        for call_func_str in call_func_strs:
+            args = re.match(add_entry_func.getName() + r"\(([0-9a-fA-F|x]+),(.*?),([0-9a-fA-F|x]+)\);", call_func_str)
+            if len(args.groups()) == 3:
+                id = int(args.group(1), 0)
+                data = getDecodeData(args.group(2), table_key)
+                table_addr = None
+                if language_id == ARCH_M68K:
+                    table_addr = table_base_addr.add(id * 6)
+                elif bits == 32:
+                    table_addr = table_base_addr.add(id * 8)
+                elif bits == 64:
+                    table_addr = table_base_addr.add(id * 16)
+                table = collections.OrderedDict()
+                table[KEY_ID] = id
+                table[KEY_TYPE] = str(type(data)).split("'")[1]
+                if isinstance(data, int):
+                    table[KEY_INT_DATA] = data
+                elif isinstance(data, str):
+                    table[KEY_STR_DATA] = data
+                table[KEY_TABLE_ADDR] = getAddrString(table_addr)
+                table[KEY_REFS] = []
+                tables.append(table)
     return tables
 
 def getTableRetrieveValFunc(table_lock_val_funcs, table_base_addr):
@@ -495,10 +540,10 @@ def getTableMnemonicString():
     language_id = currentProgram.getLanguageID().toString()
     if language_id in [ARCH_ARM_BE, ARCH_ARM_LE]:
         table_mnemonic_strs = ["str"]
-    elif language_id in [ARCH_MIPS_BE, ARCH_MIPS_LE]:
-        table_mnemonic_strs = ["sw"]
     elif language_id in [ARCH_M68K]:
         table_mnemonic_strs = ["move.l"]
+    elif language_id in [ARCH_MIPS_BE, ARCH_MIPS_LE]:
+        table_mnemonic_strs = ["sw"]
     elif language_id in [ARCH_PPC]:
         table_mnemonic_strs = ["stw"]
     elif language_id in [ARCH_SH4]:
@@ -525,13 +570,13 @@ if __name__ == "__main__":
     _ = ifc.openProgram(currentProgram)
     monitor = ConsoleTaskMonitor()
     defUndefinedFuncs(listing, monitor)
-    table_lock_val_funcs = table_init_func = util_memcpy_func = table_retrieve_val_func = table_key = table_original_key_str = table_base_addr = tables = None
+    table_lock_val_funcs = table_init_func = util_memcpy_func = add_entry_func = table_retrieve_val_func = table_key = table_original_key_str = table_base_addr = tables = None
     table_lock_val_funcs, table_key, table_original_key_str, table_base_addr = getTableKey(listing, func_mgr)
     if table_lock_val_funcs and table_key and table_original_key_str and table_base_addr:
-        table_init_func, util_memcpy_func = getTableInitFunc(listing, ifc, monitor, func_mgr, table_key)
+        table_init_func, util_memcpy_func, add_entry_func = getTableInitFunc(listing, ifc, monitor, func_mgr, table_key)
         if table_init_func and util_memcpy_func:
             updateUtilMemcpyFunc(util_memcpy_func)
-            tables = getTables(listing, ifc, monitor, table_init_func, util_memcpy_func, table_key, table_base_addr)
+            tables = getTables(listing, ifc, monitor, table_init_func, util_memcpy_func, add_entry_func, table_key, table_base_addr)
             # reference connector is optional feature
             try:
                 if tables:
@@ -583,3 +628,4 @@ if __name__ == "__main__":
         output_file = args[0]
         with open(output_file, "w") as f:
             json.dump(output_dict, f, ensure_ascii=False, indent=2)
+

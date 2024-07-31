@@ -1,38 +1,39 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 function execute_ghidra_headless_analyzer {
-    $GHIDRA_HEADLESS_PATH $GHIDRA_PROJECT_DIR $SHA256 -import $ELF_FILE -processor $1 -cspec $2 -readOnly -postScript $RUNNER_DIR/ghidra_scripts/xor_scanner.py $OUTPUT_DIR/$SHA256/xor_scanner.json -postScript $RUNNER_DIR/ghidra_scripts/xor_table.py $OUTPUT_DIR/$SHA256/xor_table.json
+    "$GHIDRA_HEADLESS_PATH" "$GHIDRA_PROJECT_DIR" "$SHA256" -import "$ELF_FILE" -processor "$1" -cspec "$2" -readOnly -analysisTimeoutPerFile 300 -postScript "$RUNNER_DIR"/ghidra_scripts/xor_scanner.py "$OUTPUT_DIR"/"$SHA256"/xor_scanner.json -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json
 
     echo "output: $OUTPUT_DIR/$SHA256/xor_scanner.json"
     echo "output: $OUTPUT_DIR/$SHA256/xor_table.json"
 }
 
-GHIDRA_INSTALL_DIR="/opt/ghidra"
-GHIDRA_HEADLESS_PATH=$GHIDRA_INSTALL_DIR/support/analyzeHeadless
+GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-"/opt/ghidra"}"
+GHIDRA_HEADLESS_PATH="$GHIDRA_INSTALL_DIR"/support/analyzeHeadless
 
 RUNNER_PATH="$0"
 RUNNER_DIR=$(dirname "$RUNNER_PATH")
 
-GHIDRA_PROJECT_DIR=$RUNNER_DIR/ghidra_project
-OUTPUT_DIR=$RUNNER_DIR/output
+GHIDRA_PROJECT_DIR="$RUNNER_DIR"/ghidra_project
+OUTPUT_DIR="$RUNNER_DIR"/output
 
 ELF_FILE="$1"
 
 if [ "$#" -ne 1 ]; then
     echo "usage: $0 <ELF_FILE>"
-    exit 1
+    exit 11
 fi
 
 if [ ! -f "$ELF_FILE" ]; then
-    echo "$ELF_FILE not found"
-    exit 1
+    echo "error: $ELF_FILE not found"
+    exit 12
 fi
 
 if file "$ELF_FILE" | grep -q "ELF"; then
     :
 else
     echo "error: this file is not elf"
-    exit 1
+    exit 13
 fi
 
 READELF_OUTPUT=$(readelf -h "$ELF_FILE")
@@ -42,36 +43,35 @@ ENDIAN=$(echo "$READELF_OUTPUT" | awk '/Data:/ {print $0}' | sed -e 's/Data://' 
 SHA256=$(sha256sum "$ELF_FILE" | cut -d' ' -f1)
 
 if [ ! -d "$GHIDRA_PROJECT_DIR" ]; then
-    mkdir -p $GHIDRA_PROJECT_DIR
+    mkdir -p "$GHIDRA_PROJECT_DIR"
 fi
 
 # remove ghidra file for re-analyzing same malware
-ls $GHIDRA_PROJECT_DIR/$SHA256* >/dev/null 2>&1
-if [ $? -eq 0 ]; then
-    rm -r $GHIDRA_PROJECT_DIR/$SHA256*
+if [ "$(ls "$GHIDRA_PROJECT_DIR"/"$SHA256"*)" != '' ]; then
+    rm -r "${GHIDRA_PROJECT_DIR:?}"/"${SHA256:?}"*
 fi
 
-if [ ! -d "$OUTPUT_DIR/$SHA256" ]; then
-    mkdir -p $OUTPUT_DIR/$SHA256
+if [ ! -d "$OUTPUT_DIR"/"$SHA256" ]; then
+    mkdir -p "$OUTPUT_DIR"/"$SHA256"
 fi
 
 # output file command results
-file $ELF_FILE > $OUTPUT_DIR/$SHA256/file.txt
+file "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/file.txt
 
 # output readelf command results
-readelf -a $ELF_FILE > $OUTPUT_DIR/$SHA256/readelf.txt
+readelf -a "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/readelf.txt
 
 if [[ "$ARCH" == "ARM" && "$BITS" == "ELF32" && "$ENDIAN" == "big endian" ]]; then
     execute_ghidra_headless_analyzer ARM:BE:32:v8 default
 elif [[ "$ARCH" == "ARM" && "$BITS" == "ELF32" && "$ENDIAN" == "little endian" ]]; then
     execute_ghidra_headless_analyzer ARM:LE:32:v8 default
+elif [[ "$ARCH" == "MC68000" && "$BITS" == "ELF32" && "$ENDIAN" == "big endian" ]]; then
+    execute_ghidra_headless_analyzer 68000:BE:32:Coldfire default
 elif [[ "$ARCH" == "MIPS"* && "$BITS" == "ELF32" && "$ENDIAN" == "big endian" ]]; then
     # e.g. MIPS R3000
     execute_ghidra_headless_analyzer MIPS:BE:32:default default
 elif [[ "$ARCH" == "MIPS"* && "$BITS" == "ELF32" && "$ENDIAN" == "little endian" ]]; then
     execute_ghidra_headless_analyzer MIPS:LE:32:default default
-elif [[ "$ARCH" == "MC68000" && "$BITS" == "ELF32" && "$ENDIAN" == "big endian" ]]; then
-    execute_ghidra_headless_analyzer 68000:BE:32:Coldfire default
 elif [[ "$ARCH" == "PowerPC" && "$BITS" == "ELF32" && "$ENDIAN" == "big endian" ]]; then
     execute_ghidra_headless_analyzer PowerPC:BE:32:default default
 elif [[ "$ARCH" == "Renesas / SuperH SH" && "$BITS" == "ELF32" && "$ENDIAN" == "little endian" ]]; then
@@ -90,4 +90,4 @@ else
 fi
 
 # dont save ghidra project files
-rm -r $GHIDRA_PROJECT_DIR
+rm -r "${GHIDRA_PROJECT_DIR:?}"

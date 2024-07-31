@@ -19,10 +19,10 @@ Cross-Architecture Mirai Configuration Extractor Utilizing Standalone Ghidra Scr
 ## Ghidra scripts
 
 ### 1. xor_scanner.py
-Extract xor data (password list) from Mirai scanner.c
+- Extract xor data (password list) from Mirai scanner.c
 
 ### 2. xor_table.py
-Extract xor data (e.g., C2, scan receiver, DoS parameter) from Mirai table.c
+- Extract xor data (e.g., C2, Scan Receiver, DoS parameter) from Mirai table.c
 
 ## Usage
 *** Malware must be unpacked before running Ghidra script
@@ -44,12 +44,11 @@ Two ways of mirai-toushi usage without additional library/tool
 #### 2-2. Headless analyzer
 - Check your $GHIDRA_INSTALL_DIR
   - At REMnux case, default directory is `/opt/ghidra`
-- Edit runner.sh variable `$GHIDRA_INSTALL_DIR`
 - Start runner.sh
 
 ```bash
 $ chmod +x runner.sh
-$ ./runner.sh <ELF_FILE>
+$ GHIDRA_INSTALL_DIR=<GHIDRA_INSTALL_DIR> ./runner.sh <ELF_FILE>
 ```
 
 - mirai-toushi results will be output to `./output/<SHA256>/` directory by default

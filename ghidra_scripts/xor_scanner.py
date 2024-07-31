@@ -1,3 +1,7 @@
+#Extract xor data (password list) from Mirai scanner.c
+#@author Shun Morishita
+#@category Analysis
+
 import collections
 import hashlib
 import json
@@ -35,9 +39,9 @@ KEY_WEIGHT = "weight"
 
 ARCH_ARM_BE = "ARM:BE:32:v8"
 ARCH_ARM_LE = "ARM:LE:32:v8"
+ARCH_M68K = "68000:BE:32:Coldfire"
 ARCH_MIPS_BE = "MIPS:BE:32:default"
 ARCH_MIPS_LE = "MIPS:LE:32:default"
-ARCH_M68K = "68000:BE:32:Coldfire"
 ARCH_PPC = "PowerPC:BE:32:default"
 ARCH_SH4 = "SuperH4:LE:32:default"
 ARCH_SPC = "sparc:BE:32:default"
@@ -45,7 +49,7 @@ ARCH_X86 = "x86:LE:32:default"
 ARCH_X86_64 = "x86:LE:64:default"
 
 SCRIPT_NAME = "xor_scanner.py"
-LANGS = [ARCH_ARM_BE, ARCH_ARM_LE, ARCH_MIPS_BE, ARCH_MIPS_LE, ARCH_M68K, ARCH_PPC, ARCH_SH4, ARCH_SPC, ARCH_X86, ARCH_X86_64]
+LANGS = [ARCH_ARM_BE, ARCH_ARM_LE, ARCH_M68K, ARCH_MIPS_BE, ARCH_MIPS_LE, ARCH_PPC, ARCH_SH4, ARCH_SPC, ARCH_X86, ARCH_X86_64]
 
 def defUndefinedFuncs(listing, monitor):
     # ref. https://github.com/EliasKotlyar/Med9GhidraScripts/blob/main/general/DefineUndefinedFunctions.py
@@ -74,23 +78,23 @@ def defUndefinedFuncs(listing, monitor):
     return None
 
 def getScannerKey(func_mgr, ifc, monitor):
-    add_auth_entry_func = scanner_key = None
+    add_auth_entry_func = deobf_func = scanner_key = None
     funcs = func_mgr.getFunctions(True)
     for func in funcs:
         res = ifc.decompileFunction(func, 60, monitor)
         if not res:
             continue
         ccode = res.getCCodeMarkup()
-        while_strs = re.findall(r"do \{.+?\} while", ccode.toString())
-        if len(while_strs) == 0:
+        roop_strs = re.findall(r"do \{.+?\} while", ccode.toString())
+        if len(roop_strs) == 0:
             # sparc uses while(true) statement
-            while_strs = re.findall(r"while\( true \) \{.+?\}", ccode.toString())
+            roop_strs = re.findall(r"while\( true \) \{.+?\}", ccode.toString())
         # add_auth_entry_func has two while statements
-        if len(while_strs) == 2:
+        if len(roop_strs) == 2:
             keys = []
-            for while_str in while_strs:
+            for roop_str in roop_strs:
                 ### ; *(byte *)(iVar4 + (int)pvVar3) = *(byte *)(iVar4 + (int)pvVar3) ^ 0x22; ~ ^ 0xb4
-                match = re.search(r".+? = .+? \^ ([0-9a-fA-F|x]+);", while_str)
+                match = re.search(r".+? = .+? \^ ([0-9a-fA-F|x]+);", roop_str)
                 if match:
                     key = int(match.group(1), 0)
                     # check 1 byte key
@@ -101,26 +105,52 @@ def getScannerKey(func_mgr, ifc, monitor):
                     add_auth_entry_func = func
                     scanner_key = keys[0]
                     break
+        else:
+            # maybe this is deobf_func (this malware is not using optimization option -O3)
+            ### ; while ((int)lVar2 < *param_2) {
+            roop_strs = re.findall(r"while \(.+? \< .+?\) \{.+?\}", ccode.toString())
+            if len(roop_strs) == 0:
+                # get for statement
+                ### ; for (iVar1 = 0; iVar1 < *param_2; iVar1 = iVar1 + 1) {
+                roop_strs = re.findall(r"for \(.+?; .+?; .+?\) \{.+?\}", ccode.toString())
+            if len(roop_strs) == 1:
+                # handle more than one xor statement
+                ### ; *(byte *)(lVar3 + lVar2) = *(byte *)(lVar3 + lVar2) ^ 3;
+                xor_strs = re.findall(r".+? = .+? \^ [0-9a-fA-F|x]+;", roop_strs[0])
+                if len(xor_strs) >= 1:
+                    for xor_str in xor_strs:
+                        match = re.search(r".+? = .+? \^ ([0-9a-fA-F|x]+);", xor_str)
+                        if match:
+                            key = int(match.group(1), 0)
+                            # check 1 byte key
+                            if key >= 0 and key <= 255:
+                                if not scanner_key:
+                                    scanner_key = key
+                                else:
+                                    scanner_key ^= key
+                    if scanner_key:
+                        deobf_func = func
+                        add_auth_entry_func = getModeCallerFunc(deobf_func)
     return add_auth_entry_func, scanner_key
 
-def getScannerInitFunc(add_auth_entry_func):
-    scanner_init_func = None
+def getModeCallerFunc(callee_func):
+    caller_func = None
     language_id = currentProgram.getLanguageID().toString()
-    entry_point = add_auth_entry_func.getEntryPoint()
+    entry_point = callee_func.getEntryPoint()
     refs = getReferencesTo(entry_point)
-    cand_scanner_init_funcs = []
+    cand_caller_funcs = []
     for ref in refs:
-        cand_scanner_init_func = None
+        cand_caller_func = None
         # in some cases (sh4), getFunctionContaining cannot identify function correctly
         if language_id == ARCH_SH4:
-            cand_scanner_init_func = getFunctionBefore(ref.getFromAddress())
+            cand_caller_func = getFunctionBefore(ref.getFromAddress())
         else:
-            cand_scanner_init_func = getFunctionContaining(ref.getFromAddress())
-        cand_scanner_init_funcs.append(cand_scanner_init_func)
-    # use mode function for scanner_init_func
-    if len(cand_scanner_init_funcs) >= 1:
-        scanner_init_func = collections.Counter(cand_scanner_init_funcs).most_common(1)[0][0]
-    return scanner_init_func
+            cand_caller_func = getFunctionContaining(ref.getFromAddress())
+        cand_caller_funcs.append(cand_caller_func)
+    # use mode function for caller_func
+    if len(cand_caller_funcs) >= 1:
+        caller_func = collections.Counter(cand_caller_funcs).most_common(1)[0][0]
+    return caller_func
 
 def updateAddAuthEntryFunc(add_auth_entry_func, scanner_init_func):
     reg1 = reg2 = reg3 = None
@@ -266,10 +296,10 @@ def getRegisterString():
     language_id = currentProgram.getLanguageID().toString()
     if language_id in [ARCH_ARM_BE, ARCH_ARM_LE]:
         reg1_str, reg2_str, reg3_str = "r0", "r1", "r2"
-    elif language_id in [ARCH_MIPS_BE, ARCH_MIPS_LE]:
-        reg1_str, reg2_str, reg3_str = "a0", "a1", "a2"
     elif language_id in [ARCH_M68K]:
         pass
+    elif language_id in [ARCH_MIPS_BE, ARCH_MIPS_LE]:
+        reg1_str, reg2_str, reg3_str = "a0", "a1", "a2"
     elif language_id in [ARCH_PPC]:
         reg1_str, reg2_str, reg3_str = "r3", "r4", "r5"
     elif language_id in [ARCH_SH4]:
@@ -297,7 +327,7 @@ if __name__ == "__main__":
     add_auth_entry_func = scanner_init_func = scanner_key = auth_tables = None
     add_auth_entry_func, scanner_key = getScannerKey(func_mgr, ifc, monitor)
     if add_auth_entry_func and scanner_key:
-        scanner_init_func = getScannerInitFunc(add_auth_entry_func)
+        scanner_init_func = getModeCallerFunc(add_auth_entry_func)
         if scanner_init_func:
             updateAddAuthEntryFunc(add_auth_entry_func, scanner_init_func)
             auth_tables = getAuthTables(ifc, monitor, add_auth_entry_func, scanner_init_func, scanner_key)
@@ -339,3 +369,4 @@ if __name__ == "__main__":
         output_file = args[0]
         with open(output_file, "w") as f:
             json.dump(output_dict, f, ensure_ascii=False, indent=2)
+
