@@ -2,7 +2,10 @@
 set -euo pipefail
 
 function execute_ghidra_headless_analyzer {
-    "$GHIDRA_HEADLESS_PATH" "$GHIDRA_PROJECT_DIR" "$SHA256" -import "$ELF_FILE" -processor "$1" -cspec "$2" -readOnly -analysisTimeoutPerFile 300 -postScript "$RUNNER_DIR"/ghidra_scripts/xor_scanner.py "$OUTPUT_DIR"/"$SHA256"/xor_scanner.json -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json
+    "$GHIDRA_HEADLESS_PATH" "$GHIDRA_PROJECT_DIR" "$SHA256" -import "$ELF_FILE" \
+        -processor "$1" -cspec "$2" -readOnly -analysisTimeoutPerFile 300 \
+        -postScript "$RUNNER_DIR"/ghidra_scripts/xor_scanner.py "$OUTPUT_DIR"/"$SHA256"/xor_scanner.json \
+        -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json
 
     echo "output: $OUTPUT_DIR/$SHA256/xor_scanner.json"
     echo "output: $OUTPUT_DIR/$SHA256/xor_table.json"
@@ -36,7 +39,7 @@ else
     exit 13
 fi
 
-READELF_OUTPUT=$(readelf -h "$ELF_FILE")
+READELF_OUTPUT=$(readelf -h "$ELF_FILE" || :)
 ARCH=$(echo "$READELF_OUTPUT" | awk '/Machine:/ {print $0}' | sed -e 's/Machine://' | xargs)
 BITS=$(echo "$READELF_OUTPUT" | awk '/Class:/ {print $0}' | sed -e 's/Class://' | xargs)
 ENDIAN=$(echo "$READELF_OUTPUT" | awk '/Data:/ {print $0}' | sed -e 's/Data://' | cut -d',' -f2 | xargs)
@@ -54,12 +57,6 @@ fi
 if [ ! -d "$OUTPUT_DIR"/"$SHA256" ]; then
     mkdir -p "$OUTPUT_DIR"/"$SHA256"
 fi
-
-# output file command results
-file "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/file.txt
-
-# output readelf command results
-readelf -a "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/readelf.txt
 
 if [[ "$ARCH" == "ARM" && "$BITS" == "ELF32" && "$ENDIAN" == "big endian" ]]; then
     execute_ghidra_headless_analyzer ARM:BE:32:v8 default
@@ -88,6 +85,12 @@ else
     echo "- BITS: $BITS"
     echo "- ENDIAN: $ENDIAN"
 fi
+
+# output file command results
+file "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/file.txt
+
+# output readelf command results
+readelf -a "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/readelf.txt || :
 
 # dont save ghidra project files
 rm -r "${GHIDRA_PROJECT_DIR:?}"

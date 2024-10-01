@@ -49,7 +49,12 @@ ARCH_X86 = "x86:LE:32:default"
 ARCH_X86_64 = "x86:LE:64:default"
 
 SCRIPT_NAME = "xor_scanner.py"
-LANGS = [ARCH_ARM_BE, ARCH_ARM_LE, ARCH_M68K, ARCH_MIPS_BE, ARCH_MIPS_LE, ARCH_PPC, ARCH_SH4, ARCH_SPC, ARCH_X86, ARCH_X86_64]
+LANGS = [
+    ARCH_ARM_BE, ARCH_ARM_LE, ARCH_M68K, ARCH_MIPS_BE,
+    ARCH_MIPS_LE, ARCH_PPC, ARCH_SH4, ARCH_SPC,
+    ARCH_X86, ARCH_X86_64
+    ]
+
 
 def defUndefinedFuncs(listing, monitor):
     # ref. https://github.com/EliasKotlyar/Med9GhidraScripts/blob/main/general/DefineUndefinedFunctions.py
@@ -64,7 +69,7 @@ def defUndefinedFuncs(listing, monitor):
         addr_set.delete(func.getBody())
     if addr_set.getNumAddressRanges() == 0:
         return None
-    # go through address set and find the actual start of flow into the dead code
+    # go through address set and find actual start of flow into dead code
     submodel = IsolatedEntrySubModel(currentProgram)
     subIter = submodel.getCodeBlocksContaining(addr_set, monitor)
     codeStarts = AddressSet()
@@ -77,6 +82,7 @@ def defUndefinedFuncs(listing, monitor):
         createFunction(phyAdr, None)
     return None
 
+
 def getScannerKey(func_mgr, ifc, monitor):
     add_auth_entry_func = deobf_func = scanner_key = None
     funcs = func_mgr.getFunctions(True)
@@ -85,6 +91,8 @@ def getScannerKey(func_mgr, ifc, monitor):
         if not res:
             continue
         ccode = res.getCCodeMarkup()
+        if not ccode:
+            continue
         roop_strs = re.findall(r"do \{.+?\} while", ccode.toString())
         if len(roop_strs) == 0:
             # sparc uses while(true) statement
@@ -93,7 +101,7 @@ def getScannerKey(func_mgr, ifc, monitor):
         if len(roop_strs) == 2:
             keys = []
             for roop_str in roop_strs:
-                ### ; *(byte *)(iVar4 + (int)pvVar3) = *(byte *)(iVar4 + (int)pvVar3) ^ 0x22; ~ ^ 0xb4
+                # ; *(byte *)(iVar4 + (int)pvVar3) = *(byte *)(iVar4 + (int)pvVar3) ^ 0xb4;
                 match = re.search(r".+? = .+? \^ ([0-9a-fA-F|x]+);", roop_str)
                 if match:
                     key = int(match.group(1), 0)
@@ -106,16 +114,16 @@ def getScannerKey(func_mgr, ifc, monitor):
                     scanner_key = keys[0]
                     break
         else:
-            # maybe this is deobf_func (this malware is not using optimization option -O3)
-            ### ; while ((int)lVar2 < *param_2) {
+            # maybe this is deobf_func (this malware is not using optimization level -O3)
+            # ; while ((int)lVar2 < *param_2) {
             roop_strs = re.findall(r"while \(.+? \< .+?\) \{.+?\}", ccode.toString())
             if len(roop_strs) == 0:
                 # get for statement
-                ### ; for (iVar1 = 0; iVar1 < *param_2; iVar1 = iVar1 + 1) {
+                # ; for (iVar1 = 0; iVar1 < *param_2; iVar1 = iVar1 + 1) {
                 roop_strs = re.findall(r"for \(.+?; .+?; .+?\) \{.+?\}", ccode.toString())
             if len(roop_strs) == 1:
                 # handle more than one xor statement
-                ### ; *(byte *)(lVar3 + lVar2) = *(byte *)(lVar3 + lVar2) ^ 3;
+                # ; *(byte *)(lVar3 + lVar2) = *(byte *)(lVar3 + lVar2) ^ 3;
                 xor_strs = re.findall(r".+? = .+? \^ [0-9a-fA-F|x]+;", roop_strs[0])
                 if len(xor_strs) >= 1:
                     for xor_str in xor_strs:
@@ -132,6 +140,7 @@ def getScannerKey(func_mgr, ifc, monitor):
                         deobf_func = func
                         add_auth_entry_func = getModeCallerFunc(deobf_func)
     return add_auth_entry_func, scanner_key
+
 
 def getModeCallerFunc(callee_func):
     caller_func = None
@@ -151,6 +160,7 @@ def getModeCallerFunc(callee_func):
     if len(cand_caller_funcs) >= 1:
         caller_func = collections.Counter(cand_caller_funcs).most_common(1)[0][0]
     return caller_func
+
 
 def updateAddAuthEntryFunc(add_auth_entry_func, scanner_init_func):
     reg1 = reg2 = reg3 = None
@@ -179,14 +189,25 @@ def updateAddAuthEntryFunc(add_auth_entry_func, scanner_init_func):
         args.append(ParameterImpl("enc_user", PointerDataType(), reg1, currentProgram))
         args.append(ParameterImpl("enc_pass", PointerDataType(), reg2, currentProgram))
         args.append(ParameterImpl("weight", UnsignedIntegerDataType(), reg3, currentProgram))
-        add_auth_entry_func.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(), add_auth_entry_func.getReturn(), args, Function.FunctionUpdateType.CUSTOM_STORAGE, True, SourceType.USER_DEFINED)
+        add_auth_entry_func.updateFunction(
+                currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
+                add_auth_entry_func.getReturn(), args,
+                Function.FunctionUpdateType.CUSTOM_STORAGE, True,
+                SourceType.USER_DEFINED
+                )
     else:
         args = []
         args.append(ParameterImpl("enc_user", PointerDataType(), currentProgram))
         args.append(ParameterImpl("enc_pass", PointerDataType(), currentProgram))
         args.append(ParameterImpl("weight", UnsignedIntegerDataType(), currentProgram))
-        add_auth_entry_func.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(), add_auth_entry_func.getReturn(), args, Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, True, SourceType.USER_DEFINED)
+        add_auth_entry_func.updateFunction(
+                currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
+                add_auth_entry_func.getReturn(), args,
+                Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, True,
+                SourceType.USER_DEFINED
+                )
     return None
+
 
 def getAuthTables(ifc, monitor, add_auth_entry_func, scanner_init_func, scanner_key):
     language_id = currentProgram.getLanguageID().toString()
@@ -198,9 +219,17 @@ def getAuthTables(ifc, monitor, add_auth_entry_func, scanner_init_func, scanner_
     if not res:
         return auth_tables
     ccode = res.getCCodeMarkup()
-    call_func_strs = re.findall(add_auth_entry_func.getName() + r"\(.*?,.*?,[0-9a-fA-F|x]+\);", ccode.toString())
+    if not ccode:
+        return auth_tables
+    call_func_strs = re.findall(
+            add_auth_entry_func.getName() + r"\(.*?,.*?,[0-9a-fA-F|x]+\);",
+            ccode.toString()
+            )
     for call_func_str in call_func_strs:
-        args = re.match(add_auth_entry_func.getName() + r"\((.*?),(.*?),([0-9a-fA-F|x]+)\);", call_func_str)
+        args = re.match(
+                add_auth_entry_func.getName() + r"\((.*?),(.*?),([0-9a-fA-F|x]+)\);",
+                call_func_str
+                )
         if len(args.groups()) == 3:
             try:
                 auth_table = collections.OrderedDict()
@@ -214,6 +243,7 @@ def getAuthTables(ifc, monitor, add_auth_entry_func, scanner_init_func, scanner_
                 continue
     return auth_tables
 
+
 def getAuthTablesSHA256(tables):
     message = ""
     for table in tables:
@@ -223,9 +253,11 @@ def getAuthTablesSHA256(tables):
     tables_hash = hashlib.sha256(message.encode("utf-8")).hexdigest()
     return tables_hash
 
+
 def getAuthTablesCount(tables):
     tables_count = len(tables)
     return tables_count
+
 
 def getDecodeString(var, scanner_key):
     if not isinstance(var, unicode):
@@ -285,11 +317,14 @@ def getDecodeString(var, scanner_key):
             string += "\\x{:02x}".format(code)
     return string
 
+
 def getUByte(addr):
     return getByte(addr) & 0xFF
 
+
 def parseVarnode(varnode):
     return varnode.toString().strip("()").split(", ")
+
 
 def getRegisterString():
     reg1_str = reg2_str = reg3_str = None
@@ -330,7 +365,10 @@ if __name__ == "__main__":
         scanner_init_func = getModeCallerFunc(add_auth_entry_func)
         if scanner_init_func:
             updateAddAuthEntryFunc(add_auth_entry_func, scanner_init_func)
-            auth_tables = getAuthTables(ifc, monitor, add_auth_entry_func, scanner_init_func, scanner_key)
+            auth_tables = getAuthTables(
+                    ifc, monitor, add_auth_entry_func,
+                    scanner_init_func, scanner_key
+                    )
     # make results data
     output_dict = collections.OrderedDict()
     output_dict[KEY_SCRIPT_NAME] = SCRIPT_NAME
@@ -369,4 +407,3 @@ if __name__ == "__main__":
         output_file = args[0]
         with open(output_file, "w") as f:
             json.dump(output_dict, f, ensure_ascii=False, indent=2)
-
