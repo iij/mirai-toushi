@@ -1,0 +1,32 @@
+{
+  "script_name": "cnc_scanner.py",
+  "ghidra_current_program": {
+    "name": "474d28ac2e0ed518d960c9aa6ae4e40e",
+    "path": "/home/remnux/474d28ac2e0ed518d960c9aa6ae4e40e",
+    "sha256": "ac7f3c5b5fb56572a87313eebb926dd56dbb1e6c5f1b39fad0e650de84587599",
+    "language_id": "ARM:LE:32:v8",
+    "image_base": "00008000",
+    "min_addr": "00008000",
+    "max_addr": "_elfSectionHeaders::000002f7"
+  },
+  "main_func": {
+    "name": "FUN_00010358",
+    "entrypoint": "00010358",
+    "how": "heuristic"
+  },
+  "cnc_candidates": [
+    {
+      "ip": "167.71.52.95",
+      "port": 23,
+      "role": "cnc",
+      "score": 4,
+      "best": true,
+      "func": "FUN_00010358",
+      "addr": "000103e0",
+      "raw_const": "0x5f3447a7",
+      "byte_order": "memory",
+      "sockaddr_addr": "0x1aba0",
+      "has_connect": true
+    }
+  ]
+}

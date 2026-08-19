@@ -11,11 +11,13 @@ function execute_ghidra_headless_analyzer {
         -processor "$1" -cspec "$2" "${readonly_args[@]}" -analysisTimeoutPerFile 300 \
         -postScript "$RUNNER_DIR"/ghidra_scripts/parse_main.py "$OUTPUT_DIR"/"$SHA256"/parse_main.json \
         -postScript "$RUNNER_DIR"/ghidra_scripts/xor_scanner.py "$OUTPUT_DIR"/"$SHA256"/xor_scanner.json \
-        -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json
+        -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json \
+        -postScript "$RUNNER_DIR"/ghidra_scripts/cnc_scanner.py "$OUTPUT_DIR"/"$SHA256"/cnc_scanner.json
 
     echo "output: $OUTPUT_DIR/$SHA256/parse_main.json"
     echo "output: $OUTPUT_DIR/$SHA256/xor_scanner.json"
     echo "output: $OUTPUT_DIR/$SHA256/xor_table.json"
+    echo "output: $OUTPUT_DIR/$SHA256/cnc_scanner.json"
 }
 
 GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-"/opt/ghidra"}"
