@@ -1,2 +1,9 @@
 ## mirai-toushi
 output/
+__pycache__/
+ghidra_project/
+*.log
+benchmark_*.json
+mirai_dataset_hashes.txt
+vt_c2_results.json
+.env

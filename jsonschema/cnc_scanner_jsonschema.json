@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "cnc_scanner",
+  "description": "extract C2 endpoints hardcoded as numeric immediates in the sockaddr_in setup",
+  "type": "object",
+  "properties": {
+    "script_name": {
+      "description": "script name",
+      "type": "string",
+      "enum": [
+        "cnc_scanner.py"
+      ]
+    },
+    "ghidra_current_program": {
+      "description": "Ghidra currentProgram info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "file name",
+          "type": "string"
+        },
+        "path": {
+          "description": "file path",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "file SHA256 hash",
+          "type": "string"
+        },
+        "language_id": {
+          "description": "program language name",
+          "type": "string"
+        },
+        "image_base": {
+          "description": "program image base address",
+          "type": "string"
+        },
+        "min_addr": {
+          "description": "program minimum address",
+          "type": "string"
+        },
+        "max_addr": {
+          "description": "program maximum address",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "sha256",
+        "language_id",
+        "image_base",
+        "min_addr",
+        "max_addr"
+      ]
+    },
+    "main_func": {
+      "description": "main() info",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "function name",
+          "type": "string"
+        },
+        "entrypoint": {
+          "description": "function entrypoint address",
+          "type": "string"
+        },
+        "how": {
+          "description": "how main() was located",
+          "type": "string",
+          "enum": [
+            "heuristic",
+            "libc_start_main"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "entrypoint",
+        "how"
+      ]
+    },
+    "cnc_candidates": {
+      "description": "sockaddr_in setups whose address is a compile-time constant, best first",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "description": "IPv4 address in dotted notation",
+            "type": "string"
+          },
+          "port": {
+            "description": "TCP port, null when sin_port is not a constant",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "role": {
+            "description": "guessed purpose of this endpoint",
+            "type": "string",
+            "enum": [
+              "cnc",
+              "resolver",
+              "bind"
+            ]
+          },
+          "score": {
+            "description": "ranking score, higher is more likely the C2",
+            "type": "integer"
+          },
+          "best": {
+            "description": "true for the single endpoint reported as the C2",
+            "type": "boolean"
+          },
+          "func": {
+            "description": "function holding the sockaddr_in setup",
+            "type": "string"
+          },
+          "addr": {
+            "description": "instruction address writing sin_addr",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "raw_const": {
+            "description": "the constant as written in the binary",
+            "type": "string"
+          },
+          "byte_order": {
+            "description": "memory = raw store (byte order follows the program), wrapper = value passed through htonl()/htons()",
+            "type": "string",
+            "enum": [
+              "memory",
+              "wrapper"
+            ]
+          },
+          "sockaddr_addr": {
+            "description": "address of the sockaddr_in, or a symbolic key when it is reached through a base register",
+            "type": "string"
+          },
+          "has_connect": {
+            "description": "a connect-shaped call (fd, sockaddr*, 0x10) sits in the same function",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ip",
+          "port",
+          "role",
+          "score",
+          "best",
+          "func",
+          "raw_const",
+          "byte_order",
+          "sockaddr_addr",
+          "has_connect"
+        ]
+      }
+    }
+  },
+  "required": [
+    "script_name",
+    "ghidra_current_program"
+  ]
+}

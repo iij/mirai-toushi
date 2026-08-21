@@ -6,28 +6,49 @@ function execute_ghidra_headless_analyzer {
         -processor "$1" -cspec "$2" -readOnly -analysisTimeoutPerFile 300 \
         -postScript "$RUNNER_DIR"/ghidra_scripts/parse_main.py "$OUTPUT_DIR"/"$SHA256"/parse_main.json \
         -postScript "$RUNNER_DIR"/ghidra_scripts/xor_scanner.py "$OUTPUT_DIR"/"$SHA256"/xor_scanner.json \
-        -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json
+        -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json \
+        -postScript "$RUNNER_DIR"/ghidra_scripts/cnc_scanner.py "$OUTPUT_DIR"/"$SHA256"/cnc_scanner.json
 
     echo "output: $OUTPUT_DIR/$SHA256/parse_main.json"
     echo "output: $OUTPUT_DIR/$SHA256/xor_scanner.json"
     echo "output: $OUTPUT_DIR/$SHA256/xor_table.json"
+    echo "output: $OUTPUT_DIR/$SHA256/cnc_scanner.json"
 }
 
 GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-"/opt/ghidra"}"
 GHIDRA_HEADLESS_PATH="$GHIDRA_INSTALL_DIR"/support/analyzeHeadless
 
 RUNNER_PATH="$0"
-RUNNER_DIR=$(dirname "$RUNNER_PATH")
+RUNNER_DIR=$(cd "$(dirname "$RUNNER_PATH")" && pwd)
 
 GHIDRA_PROJECT_DIR="$RUNNER_DIR"/ghidra_project
 OUTPUT_DIR="$RUNNER_DIR"/output
 
-if [ "$#" -ne 1 ]; then
-    echo "usage: $0 <ELF_FILE>"
+KEEP_PROJECT=0
+ELF_FILE=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --keep-project)
+      KEEP_PROJECT=1
+      shift
+      ;;
+    *)
+      if [ -z "$ELF_FILE" ]; then
+        ELF_FILE="$1"
+      else
+        echo "usage: $0 [--keep-project] <ELF_FILE>"
+        exit 11
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [ -z "$ELF_FILE" ]; then
+    echo "usage: $0 [--keep-project] <ELF_FILE>"
     exit 11
 fi
-
-ELF_FILE="$1"
 
 if [ ! -f "$ELF_FILE" ]; then
     echo "error: $ELF_FILE not found"
@@ -52,9 +73,7 @@ if [ ! -d "$GHIDRA_PROJECT_DIR" ]; then
 fi
 
 # remove ghidra file for re-analyzing same malware
-if [ "$(ls "$GHIDRA_PROJECT_DIR"/"$SHA256"*)" != '' ]; then
-    rm -r "${GHIDRA_PROJECT_DIR:?}"/"${SHA256:?}"*
-fi
+rm -rf "${GHIDRA_PROJECT_DIR:?}/${SHA256:?}"*
 
 if [ ! -d "$OUTPUT_DIR"/"$SHA256" ]; then
     mkdir -p "$OUTPUT_DIR"/"$SHA256"
@@ -94,5 +113,7 @@ file "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/file.txt
 # output readelf command results
 readelf -a "$ELF_FILE" > "$OUTPUT_DIR"/"$SHA256"/readelf.txt || :
 
-# dont save ghidra project files
-rm -r "${GHIDRA_PROJECT_DIR:?}"
+if [ "$KEEP_PROJECT" -eq 0 ]; then
+    # dont save ghidra project files
+    rm -rf "${GHIDRA_PROJECT_DIR:?}/${SHA256:?}"*
+fi
