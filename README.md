@@ -12,12 +12,12 @@ Cross-Architecture Mirai Configuration Extractor Utilizing Standalone Ghidra Scr
   - x86_64
 
 - Supported Ghidra versions
-  - Earlier than 12.1
+  - 10.2.2 ≤ version ≤ 12.0.4
 
 This work was presented at Botconf2025.
 - Slide: https://www.botconf.eu/wp-content/uploads/formidable/2/BOTCONF2025-mirai-toushi-botconf2025.pdf
 - Paper: https://cyberjournal.cecyf.fr/index.php/cybin/article/view/56
-
+  - Tested on Ghidra 10.2.2
 ```
 @article{morishita2025mirai,
   title={mirai-toushi: Cross-Architecture Mirai Configuration Extractor Utilizing Standalone Ghidra Script},
