@@ -2,8 +2,13 @@
 set -euo pipefail
 
 function execute_ghidra_headless_analyzer {
+    local -a readonly_args=()
+    if [ "$KEEP_PROJECT" -eq 0 ]; then
+        readonly_args=(-readOnly)
+    fi
+
     "$GHIDRA_HEADLESS_PATH" "$GHIDRA_PROJECT_DIR" "$SHA256" -import "$ELF_FILE" \
-        -processor "$1" -cspec "$2" -readOnly -analysisTimeoutPerFile 300 \
+        -processor "$1" -cspec "$2" "${readonly_args[@]}" -analysisTimeoutPerFile 300 \
         -postScript "$RUNNER_DIR"/ghidra_scripts/parse_main.py "$OUTPUT_DIR"/"$SHA256"/parse_main.json \
         -postScript "$RUNNER_DIR"/ghidra_scripts/xor_scanner.py "$OUTPUT_DIR"/"$SHA256"/xor_scanner.json \
         -postScript "$RUNNER_DIR"/ghidra_scripts/xor_table.py "$OUTPUT_DIR"/"$SHA256"/xor_table.json
