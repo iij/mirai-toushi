@@ -84,15 +84,9 @@ def defUndefinedFuncs(listing, monitor):
 
 
 def countCloseSeq(text):
-    """Count `... (0); ... (1); ... (2);` sequences, one line at a time.
-
-    Same answer as re.findall(r".+?\\(0\\);.+?\\(1\\);.+?\\(2\\);", text) - the
-    tokens must appear in order on a single line ("." never matched a newline),
-    with at least one character before and between them - but linear instead of
-    quadratic. The regex backtracks catastrophically on the large functions of
-    a statically linked build: on one 99 KB decompiled libc function it spent
-    426 s to return zero matches, which is what made those samples time out.
-    """
+    # count `...(0); ...(1); ...(2);` sequences, one line at a time
+    # same answer as re.findall(r".+?\\(0\\);.+?\\(1\\);.+?\\(2\\);", text),
+    # but linear instead of quadratic
     total = 0
     for line in text.split("\n"):
         pos = 0
@@ -124,8 +118,6 @@ def getMainFunc(func_mgr, ifc, monitor):
             continue
         if countCloseSeq(ccode.toString()) != 1:
             continue
-        # this regex has the same backtracking shape as the one above, but it
-        # only runs on the few functions that pass the close(0/1/2) filter
         c2conn_strs = re.findall(
                 r"(do|while\( true \)) \{.+?if \(.+? != .+?(0xffffffff|\-1)\) \{.+?\}.+?if \(.+? == .+?(0xffffffff|\-1)\)",
                 ccode.toString()
