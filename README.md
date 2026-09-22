@@ -41,6 +41,9 @@ This work was presented at Botconf2025.
 ### 3. parse_main.py
 - Extract additional data (e.g., C2 in resolv_cnc_addr(), DoS function) from Mirai main.c/attack.c
 
+### 4. cnc_scanner.py (Experimental: Newly added in https://github.com/iij/mirai-toushi/pull/1)
+- Extract C2 endpoints that are hardcoded as numeric immediates (sockaddr_in setup)
+
 ## Usage
 *** Malware must be unpacked before running Ghidra script
 
